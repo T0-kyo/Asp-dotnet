@@ -62,6 +62,7 @@ public class UrlService : IUrlService
         if (url is null)
             throw new UrlNotFound();
         
+        url.IncreaseVisitCount();
         return url.OriginalUrl;
     }
 
