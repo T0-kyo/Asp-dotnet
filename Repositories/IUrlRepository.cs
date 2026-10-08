@@ -5,8 +5,8 @@ namespace UrlShortner.Repositories;
 
 public interface IUrlRepository
 {
-    bool TryAdd(Url url);
-    bool Remove(string shortUrl);
-    Url? Get(string shortUrl);
-    IReadOnlyCollection<Url>? GetAll();
+    Task<bool> TryAddAsync(Url url);
+    Task<bool> RemoveAsync(string shortUrl);
+    Task<Url?> GetAsync(string shortUrl);
+    Task<IReadOnlyCollection<Url>> GetAllAsync();
 }

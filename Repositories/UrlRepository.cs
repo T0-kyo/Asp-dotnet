@@ -9,13 +9,13 @@ public class UrlRepository : IUrlRepository
     private readonly ConcurrentDictionary<string, Url> _urls = new();
 
 
-    public bool TryAdd(Url url) => _urls.TryAdd(url.GeneratedUrl, url);
+    public async Task<bool> TryAddAsync(Url url) => _urls.TryAdd(url.GeneratedUrl, url);
 
-    public bool Remove(string shortUrl) => _urls.Remove(shortUrl, out var _);
+    public async Task<bool> RemoveAsync(string shortUrl) => _urls.Remove(shortUrl, out var _);
 
-    public IReadOnlyCollection<Url> GetAll() => (IReadOnlyCollection<Url>)_urls.Values;
+    public async Task<IReadOnlyCollection<Url>> GetAllAsync() => (IReadOnlyCollection<Url>)_urls.Values;
 
-    public Url? Get(string shortUrl)
+    public async Task<Url?> GetAsync(string shortUrl)
     {
         _urls.TryGetValue(shortUrl, out var url);
 
