@@ -19,7 +19,7 @@ public class UrlController : ControllerBase
     }
 
     [HttpGet("{url}")]
-    public async Task<IActionResult> GetUrlAsync(string url) => Redirect(await _urlService.GetOriginalUrlAsync(url));
+    public async Task<IActionResult> GetUrlAsync(string url) => Redirect($"https://{await _urlService.GetOriginalUrlAsync(url)}");
 
     [HttpGet]
     public async Task<IActionResult> GetAllUrlsAsync() => Ok(await _urlService.GetAllUrlsAsync());
