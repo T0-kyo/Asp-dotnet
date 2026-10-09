@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using UrlShortner.DTOs;
 using UrlShortner.Services;
 
@@ -8,6 +9,7 @@ namespace UrlShortner.Controllers;
 
 [ApiController]
 [Route("api/v1/urls")]
+[EnableRateLimiting("fixed_window")]
 public class UrlController : ControllerBase
 {
     private readonly IUrlService _urlService;
