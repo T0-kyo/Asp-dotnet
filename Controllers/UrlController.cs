@@ -24,7 +24,12 @@ public class UrlController : ControllerBase
     public async Task<IActionResult> GetUrlAsync(string url) => Redirect($"https://{await _urlService.GetOriginalUrlAsync(url)}");
 
     [HttpGet]
-    public async Task<IActionResult> GetAllUrlsAsync() => Ok(await _urlService.GetAllUrlsAsync());
+    public async Task<IActionResult> GetAllUrlsAsync(string? sortBy, string? creator, string? category, int page = 1, int pageSize = 10)
+    {
+        pageSize = Math.Min(pageSize, 50);
+
+        return Ok(await _urlService.GetAllUrlsAsync(sortBy, creator, category, page, pageSize));
+    }
 
     [HttpPost]
     public async Task<IActionResult> AddUrlAsync(AddUrlDto dto)

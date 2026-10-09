@@ -84,15 +84,58 @@ public class UrlService : IUrlService
         return result!;
     }
 
-    public async Task<IReadOnlyCollection<GetUrlDto>> GetAllUrlsAsync()
+    public async Task<IReadOnlyCollection<GetUrlDto>> GetAllUrlsAsync(string? sortBy, string? creator, string? category, int page, int pageSize)
     {
-        string key = $"urls:v{_cacheVersion}";
+        string key = $"urls:v{_cacheVersion}:creator={creator}:category={category}:page={page}:pageSize={pageSize}";
 
         var result = await _cache.GetOrCreateAsync(key, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
 
             var urls = await _urlRepository.GetAllAsync();
+
+            if (creator is not null)
+            {
+                urls = [..urls.Where(u => u.Creator == creator)];
+            }
+
+            if (category is not null)
+            {
+                var urlCategory = category.ToLower() switch
+                {
+                    "business" => UrlCategory.Business,
+                    "entertainment" => UrlCategory.Entertainment,
+                    "online-tools" => UrlCategory.OnlineTools,
+                    "social-media" => UrlCategory.SocialMedia,
+                    "others" => UrlCategory.Others,
+                    _ => throw new FilterNotFound($"category={category}") 
+                };
+
+                urls = [..urls.Where(u => u.Category == urlCategory)];
+            }
+
+            if (sortBy is not null)
+            {
+                switch (sortBy.ToLower())
+                {
+                    case "latest":
+                        urls = [..urls.OrderByDescending(u => u.CreatedAt)];
+                        break;
+                    case "oldest":
+                        urls = [..urls.OrderBy(u => u.CreatedAt)];
+                        break;
+                    case "most-popular":
+                        urls = [..urls.OrderByDescending(u => u.TotalVisits)];
+                        break;
+                    case "least-popular":
+                        urls = [..urls.OrderBy(u => u.TotalVisits)];
+                        break;
+                    default:
+                        throw new FilterNotFound($"sortBy={sortBy}");
+                }
+            }
+
+            urls = [..urls.Skip(page * pageSize).Take(pageSize)];
 
             return urls.Select(u => new GetUrlDto(u.OriginalUrl, u.Creator, u.Category)).ToList();
         });
