@@ -1,4 +1,5 @@
 using UrlShortner.Services;
+using UrlShortner.Settings;
 using UrlShortner.Middleware;
 using UrlShortner.Repositories;
 using UrlShortner.BackgroundServices;
@@ -19,6 +20,9 @@ builder.Services.AddRateLimiter(limiterOptions =>
         options.Window = TimeSpan.FromMinutes(1);
     });
 });
+
+builder.Services.Configure<AdminSettings>(
+    builder.Configuration.GetSection("Admin-Key"));
 
 builder.Services.AddSingleton<IUrlRepository, UrlRepository>();
 builder.Services.AddScoped<IUrlService, UrlService>();
@@ -44,7 +48,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseExceptionHandler();
-
+app.UseMiddleware<AdminAuthorizationMiddleware>();
 
 app.UseRouting();
 app.UseRateLimiter();
