@@ -21,7 +21,7 @@ public class UrlController : ControllerBase
     }
 
     [HttpGet("{url}")]
-    public async Task<IActionResult> GetUrlAsync(string url) => Redirect($"https://{await _urlService.GetOriginalUrlAsync(url)}");
+    public async Task<IActionResult> GetUrlAsync(string url) => Redirect(await _urlService.GetOriginalUrlAsync(url));
 
     [HttpGet]
     public async Task<IActionResult> GetAllUrlsAsync(string? sortBy, string? creator, string? category, int page = 1, int pageSize = 10)
