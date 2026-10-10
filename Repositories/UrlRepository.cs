@@ -24,7 +24,7 @@ public class UrlRepository : IUrlRepository
 
     public async Task RemoveExpired()
     {
-        var expiredUrls = _urls.Where(u => u.Value.ExpiresAt >= DateTime.UtcNow);
+        var expiredUrls = _urls.Where(u => u.Value.ExpiresAt <= DateTime.UtcNow);
 
         foreach (var url in expiredUrls)
             _urls.Remove(url.Key, out var _);
