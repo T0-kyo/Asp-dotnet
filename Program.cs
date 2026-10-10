@@ -28,6 +28,7 @@ builder.Services.Configure<RateLimiterSettings>(
 
 
 var rateLimiterOptions = new RateLimiterSettings();
+builder.Configuration.GetSection("RateLimiterSettings").Bind(rateLimiterOptions);
 
 builder.Services.AddRateLimiter(limiterOptions =>
 {
@@ -73,8 +74,13 @@ app.UseWhen(
     context => context.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase),
     appBuilder => appBuilder.UseMiddleware<IdempotencyMiddleware>()
 );
+
 app.UseExceptionHandler();
-app.UseMiddleware<AdminAuthorizationMiddleware>();
+
+app.UseWhen(
+    context => context.Request.Path.StartsWithSegments("api/v1/urls/admin"),
+    appBuilder => appBuilder.UseMiddleware<AdminAuthorizationMiddleware>()    
+);
 
 app.UseRouting();
 app.UseRateLimiter();
