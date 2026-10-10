@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 using UrlShortner.DTOs;
 using UrlShortner.Services;
+using UrlShortner.Settings;
 
 
 namespace UrlShortner.Controllers;
@@ -13,11 +15,13 @@ namespace UrlShortner.Controllers;
 public class UrlController : ControllerBase
 {
     private readonly IUrlService _urlService;
+    private readonly IOptions<FilterSettings> _options;
 
 
-    public UrlController(IUrlService urlService)
+    public UrlController(IUrlService urlService, IOptions<FilterSettings> options)
     {
         _urlService = urlService;
+        _options = options;
     }
 
     [HttpGet("{url}")]
@@ -26,7 +30,7 @@ public class UrlController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAllUrlsAsync(string? sortBy, string? creator, string? category, int page = 1, int pageSize = 10)
     {
-        pageSize = Math.Min(pageSize, 50);
+        pageSize = Math.Min(pageSize, _options.Value.MaxPageSize);
 
         return Ok(await _urlService.GetAllUrlsAsync(sortBy, creator, category, page, pageSize));
     }

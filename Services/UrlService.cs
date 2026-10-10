@@ -1,9 +1,11 @@
 using System.Text;
 using UrlShortner.DTOs;
 using UrlShortner.Models;
+using UrlShortner.Settings;
 using UrlShortner.Exceptions;
 using UrlShortner.Models.Types;
 using UrlShortner.Repositories;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Caching.Memory;
 
 
@@ -11,14 +13,18 @@ namespace UrlShortner.Services;
 
 public class UrlService : IUrlService
 {
+    private readonly IOptions<UrlDefaultSettings> _urlOptions;
+    private readonly IOptions<CacheSettings> _cacheSettings;
     private readonly IUrlRepository _urlRepository;
     private readonly IMemoryCache _cache;
     private int _cacheVersion = 1;
 
 
-    public UrlService(IUrlRepository urlRepository, IMemoryCache cache)
+    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IOptions<CacheSettings> cacheSettings, IUrlRepository urlRepository, IMemoryCache cache)
     {
         _urlRepository = urlRepository;
+        _cacheSettings = cacheSettings;
+        _urlOptions = urlOptions;
         _cache = cache;
     }
 
@@ -30,7 +36,7 @@ public class UrlService : IUrlService
         .Append(url[0])
         .Append(url.Length)
         .Append(url[^1])
-        .Append(Random.Shared.GetHexString(7));
+        .Append(Random.Shared.GetHexString(_urlOptions.Value.UrlRandomValues));
 
         return builder.ToString();
     }
@@ -41,7 +47,7 @@ public class UrlService : IUrlService
         {
             OriginalUrl = dto.OriginalUrl,
             GeneratedUrl = GenerateShortUrl(dto.OriginalUrl),
-            Creator = dto.Creator ?? "Unknown",
+            Creator = dto.Creator ?? _urlOptions.Value.DefaultCreator,
             Category = dto.Category ?? UrlCategory.Others
         };
 
@@ -70,7 +76,7 @@ public class UrlService : IUrlService
 
         var result = await _cache.GetOrCreateAsync(key, async enrty =>
         {
-            enrty.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2);
+            enrty.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(_cacheSettings.Value.GetUrlTtlHours);
 
             var url = await _urlRepository.GetAsync(shortUrl);
 
@@ -90,7 +96,7 @@ public class UrlService : IUrlService
 
         var result = await _cache.GetOrCreateAsync(key, async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(2);
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.Value.GetAllTtlMinutes);
 
             var urls = await _urlRepository.GetAllAsync();
 
