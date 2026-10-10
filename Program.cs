@@ -24,6 +24,16 @@ builder.Services.AddRateLimiter(limiterOptions =>
 builder.Services.Configure<AdminSettings>(
     builder.Configuration.GetSection("Admin-Key"));
 
+builder.Services.Configure<CacheSettings>(
+    builder.Configuration.GetSection("CacheSettings"));
+
+builder.Services.Configure<FilterSettings>(
+    builder.Configuration.GetSection("FilterSettings"));
+
+builder.Services.Configure<UrlDefaultSettings>(
+    builder.Configuration.GetSection("UrlDefaultSettings"));
+
+
 builder.Services.AddSingleton<IUrlRepository, UrlRepository>();
 builder.Services.AddScoped<IUrlService, UrlService>();
 
