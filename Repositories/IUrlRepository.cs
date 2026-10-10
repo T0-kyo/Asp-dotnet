@@ -7,6 +7,7 @@ public interface IUrlRepository
 {
     Task<bool> TryAddAsync(Url url);
     Task<bool> RemoveAsync(string shortUrl);
+    Task RemoveExpired();
     Task<Url?> GetAsync(string shortUrl);
     Task<IReadOnlyCollection<Url>> GetAllAsync();
 }
