@@ -14,16 +14,16 @@ namespace UrlShortner.Services;
 public class UrlService : IUrlService
 {
     private readonly IOptions<UrlDefaultSettings> _urlOptions;
-    private readonly IOptions<CacheSettings> _cacheSettings;
+    private readonly IOptions<CacheSettings> _cacheOptions;
     private readonly IUrlRepository _urlRepository;
     private readonly IMemoryCache _cache;
     private int _cacheVersion = 1;
 
 
-    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IOptions<CacheSettings> cacheSettings, IUrlRepository urlRepository, IMemoryCache cache)
+    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IOptions<CacheSettings> cacheOptions, IUrlRepository urlRepository, IMemoryCache cache)
     {
         _urlRepository = urlRepository;
-        _cacheSettings = cacheSettings;
+        _cacheOptions = cacheOptions;
         _urlOptions = urlOptions;
         _cache = cache;
     }
@@ -76,7 +76,9 @@ public class UrlService : IUrlService
 
         var result = await _cache.GetOrCreateAsync(key, async enrty =>
         {
-            enrty.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(_cacheSettings.Value.GetUrlTtlHours);
+            var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetUrlJitterMinValue, _cacheOptions.Value.GetUrlJitterMaxValue));
+
+            enrty.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(_cacheOptions.Value.GetUrlTtlHours) + jitter;
 
             var url = await _urlRepository.GetAsync(shortUrl);
 
@@ -96,7 +98,9 @@ public class UrlService : IUrlService
 
         var result = await _cache.GetOrCreateAsync(key, async entry =>
         {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheSettings.Value.GetAllTtlMinutes);
+            var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetAllJitterMinValue, _cacheOptions.Value.GetAllJitterMaxValue));
+
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.Value.GetAllTtlMinutes) + jitter;
 
             var urls = await _urlRepository.GetAllAsync();
 
