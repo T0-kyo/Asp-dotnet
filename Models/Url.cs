@@ -14,6 +14,7 @@ public class Url
     public string Creator { get; set; } = "";
     public UrlCategory Category { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ExpiresAt { get; set; }
 
 
     public void IncreaseVisitCount()
