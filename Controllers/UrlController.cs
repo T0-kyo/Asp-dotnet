@@ -27,7 +27,7 @@ public class UrlController : ControllerBase
     [HttpGet("{url}")]
     public async Task<IActionResult> GetUrlAsync(string url) => Redirect(await _urlService.GetOriginalUrlAsync(url));
 
-    [HttpGet]
+    [HttpGet("admin")]
     public async Task<IActionResult> GetAllUrlsAsync(string? sortBy, string? creator, string? category, int page = 1, int pageSize = 10)
     {
         pageSize = Math.Min(pageSize, _options.Value.MaxPageSize);
@@ -43,7 +43,7 @@ public class UrlController : ControllerBase
         return Created($"api/v1/urls/{uri.GeneratedUrl}", uri);
     }
 
-    [HttpDelete("{url}")]
+    [HttpDelete("admin/{url}")]
     public async Task<IActionResult> DeleteUrlAsync(string url)
     {
         await _urlService.RemoveUrlAsync(url);
