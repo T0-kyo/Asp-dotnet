@@ -22,11 +22,17 @@ public class UrlRepository : IUrlRepository
         return url;
     }
 
-    public async Task RemoveExpired()
+    public async Task RemoveExpiredAsync()
     {
         var expiredUrls = _urls.Where(u => u.Value.ExpiresAt <= DateTime.UtcNow);
 
         foreach (var url in expiredUrls)
             _urls.Remove(url.Key, out var _);
+    }
+
+    public async Task IncrementVisitCountAsync(IReadOnlyCollection<KeyValuePair<string, int>> pendingVisits)
+    {
+        foreach (var url in pendingVisits)
+            _urls[url.Key].IncreaseVisitCount(url.Value);
     }
 }

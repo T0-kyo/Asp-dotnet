@@ -17,8 +17,8 @@ public class Url
     public DateTime ExpiresAt { get; set; }
 
 
-    public void IncreaseVisitCount()
+    public void IncreaseVisitCount(int value)
     {
-        Interlocked.Increment(ref _totalVisits);
+        Interlocked.Add(ref _totalVisits, value);
     }
 }

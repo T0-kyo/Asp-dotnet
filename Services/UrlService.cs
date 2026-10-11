@@ -1,6 +1,7 @@
 using System.Text;
 using UrlShortner.DTOs;
 using UrlShortner.Models;
+using UrlShortner.Stores;
 using UrlShortner.Settings;
 using UrlShortner.Exceptions;
 using UrlShortner.Models.Types;
@@ -16,15 +17,17 @@ public class UrlService : IUrlService
     private readonly IOptions<UrlDefaultSettings> _urlOptions;
     private readonly IOptions<CacheSettings> _cacheOptions;
     private readonly IUrlRepository _urlRepository;
+    private readonly IVisitStore _visitStore;
     private readonly IMemoryCache _cache;
     private int _cacheVersion = 1;
 
 
-    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IOptions<CacheSettings> cacheOptions, IUrlRepository urlRepository, IMemoryCache cache)
+    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IVisitStore visitStore, IOptions<CacheSettings> cacheOptions, IUrlRepository urlRepository, IMemoryCache cache)
     {
         _urlRepository = urlRepository;
         _cacheOptions = cacheOptions;
         _urlOptions = urlOptions;
+        _visitStore = visitStore;
         _cache = cache;
     }
 
@@ -86,10 +89,10 @@ public class UrlService : IUrlService
             if (url is null)
                 throw new UrlNotFound();
 
-            url.IncreaseVisitCount();
             return url.OriginalUrl;
         });
 
+        _visitStore.AddVisitCount(shortUrl);
         return result!;
     }
 
@@ -148,7 +151,7 @@ public class UrlService : IUrlService
 
             urls = [..urls.Skip(page * pageSize).Take(pageSize)];
 
-            return urls.Select(u => new GetUrlDto(u.OriginalUrl, u.Creator, u.Category)).ToList();
+            return urls.Select(u => new GetUrlDto(u.OriginalUrl, u.Creator, u.Category, u.TotalVisits)).ToList();
         });
         
         return result!;
