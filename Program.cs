@@ -30,6 +30,9 @@ builder.Services.Configure<RateLimiterSettings>(
 builder.Services.Configure<BackgroundSettings>(
     builder.Configuration.GetSection("BackgroundSettings"));
 
+builder.Services.Configure<IdempotencySettings>(
+    builder.Configuration.GetSection("IdempotencySettings"));
+
 
 var rateLimiterOptions = new RateLimiterSettings();
 builder.Configuration.GetSection("RateLimiterSettings").Bind(rateLimiterOptions);
@@ -47,6 +50,7 @@ builder.Services.AddRateLimiter(limiterOptions =>
 
 
 builder.Services.AddSingleton<IVisitStore, VisitStore>();
+builder.Services.AddSingleton<IIdempotencyStore, IdempotencyStore>();
 builder.Services.AddSingleton<IUrlRepository, UrlRepository>();
 
 builder.Services.AddScoped<IUrlService, UrlService>();
