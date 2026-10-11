@@ -1,3 +1,4 @@
+using UrlShortner.Stores;
 using UrlShortner.Services;
 using UrlShortner.Settings;
 using UrlShortner.Middleware;
@@ -26,6 +27,9 @@ builder.Services.Configure<UrlDefaultSettings>(
 builder.Services.Configure<RateLimiterSettings>(
     builder.Configuration.GetSection("RateLimiterSettings"));
 
+builder.Services.Configure<BackgroundSettings>(
+    builder.Configuration.GetSection("BackgroundSettings"));
+
 
 var rateLimiterOptions = new RateLimiterSettings();
 builder.Configuration.GetSection("RateLimiterSettings").Bind(rateLimiterOptions);
@@ -42,7 +46,9 @@ builder.Services.AddRateLimiter(limiterOptions =>
 });
 
 
+builder.Services.AddSingleton<IVisitStore, VisitStore>();
 builder.Services.AddSingleton<IUrlRepository, UrlRepository>();
+
 builder.Services.AddScoped<IUrlService, UrlService>();
 
 builder.Services.AddHostedService<CacheWarmupService>();
