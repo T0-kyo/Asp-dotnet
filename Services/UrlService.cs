@@ -1,4 +1,3 @@
-using System.Text;
 using UrlShortner.DTOs;
 using UrlShortner.Models;
 using UrlShortner.Stores;
@@ -7,6 +6,7 @@ using UrlShortner.Exceptions;
 using UrlShortner.Models.Types;
 using UrlShortner.Repositories;
 using Microsoft.Extensions.Options;
+using System.Security.Cryptography;
 using Microsoft.Extensions.Caching.Memory;
 
 
@@ -19,7 +19,8 @@ public class UrlService : IUrlService
     private readonly IUrlRepository _urlRepository;
     private readonly IVisitStore _visitStore;
     private readonly IMemoryCache _cache;
-    private int _cacheVersion = 1;
+    static private int _cacheVersion = 1;
+    const string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 
     public UrlService(IOptions<UrlDefaultSettings> urlOptions, IVisitStore visitStore, IOptions<CacheSettings> cacheOptions, IUrlRepository urlRepository, IMemoryCache cache)
@@ -31,17 +32,9 @@ public class UrlService : IUrlService
         _cache = cache;
     }
 
-    private string GenerateShortUrl(string url)
+    private string GenerateShortUrl()
     {
-        var builder = new StringBuilder();
-
-        builder
-        .Append(url[0])
-        .Append(url.Length)
-        .Append(url[^1])
-        .Append(Random.Shared.GetHexString(_urlOptions.Value.UrlRandomValues));
-
-        return builder.ToString();
+        return RandomNumberGenerator.GetString(allowedChars, 7);
     }
 
     private bool ValidateUri(string uri)
@@ -63,7 +56,7 @@ public class UrlService : IUrlService
         var url = new Url
         {
             OriginalUrl = dto.OriginalUrl,
-            GeneratedUrl = GenerateShortUrl(dto.OriginalUrl),
+            GeneratedUrl = GenerateShortUrl(),
             Creator = dto.Creator ?? _urlOptions.Value.DefaultCreator,
             Category = dto.Category ?? UrlCategory.Others,
             ExpiresAt = DateTime.UtcNow.Add(TimeSpan.FromDays(_urlOptions.Value.UrlExpireInDays))
@@ -71,7 +64,7 @@ public class UrlService : IUrlService
 
         while (!await _urlRepository.TryAddAsync(url))
         {
-            url.GeneratedUrl = GenerateShortUrl(dto.OriginalUrl);
+            url.GeneratedUrl = GenerateShortUrl();
         }            
 
         Interlocked.Increment(ref _cacheVersion);
