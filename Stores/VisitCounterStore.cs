@@ -10,17 +10,17 @@ public class VisitStore : IVisitStore
 
     public IReadOnlyCollection<KeyValuePair<string, int>> Drain()
     {
-        IReadOnlyCollection<KeyValuePair<string, int>> results = [.. _visitStore];
+        List<KeyValuePair<string, int>> result = new();
 
-        _visitStore.Clear();
-        return results;
+        foreach (var pair in _visitStore)
+        {
+            if (_visitStore.TryRemove(pair.Key, out var removedValue))
+                result.Add(new KeyValuePair<string, int>(pair.Key, removedValue));
+        }
+
+        return result;
     }
 
-    public void AddVisitCount(string url)
-    {
-        if (_visitStore.TryGetValue(url, out var count))
-            Interlocked.Increment(ref count);
-        
-        _visitStore.TryAdd(url, 1);
-    }
+    public void AddVisitCount(string url) 
+        => _visitStore.AddOrUpdate(url, 1, (key, currentCount) => currentCount + 1);
 }
