@@ -44,8 +44,22 @@ public class UrlService : IUrlService
         return builder.ToString();
     }
 
+    private bool ValidateUri(string uri)
+    {
+        if (Uri.TryCreate(uri, UriKind.Absolute, out var result))
+        {
+            return result.Scheme == Uri.UriSchemeHttp 
+            || result.Scheme == Uri.UriSchemeHttps;
+        }
+
+        return false;
+    }
+
     public async Task<Url> AddUrlAsync(AddUrlDto dto)
     {
+        if (!ValidateUri(dto.OriginalUrl))
+            throw new InvalidUri();
+
         var url = new Url
         {
             OriginalUrl = dto.OriginalUrl,
