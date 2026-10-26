@@ -32,7 +32,10 @@ public class UrlRepository : IUrlRepository
 
     public async Task IncrementVisitCountAsync(IReadOnlyCollection<KeyValuePair<string, int>> pendingVisits)
     {
-        foreach (var url in pendingVisits)
-            _urls[url.Key].IncreaseVisitCount(url.Value);
+        foreach (var visit in pendingVisits)
+        {
+            if(_urls.TryGetValue(visit.Key, out var url))
+                url.IncreaseVisitCount(visit.Value);
+        }
     }
 }
