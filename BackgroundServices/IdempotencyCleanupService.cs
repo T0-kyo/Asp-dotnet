@@ -21,7 +21,7 @@ public class IdempotencyCleanupService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            await Task.Delay(_options.Value.CleanupIntervalMinutes, stoppingToken);
+            await Task.Delay(TimeSpan.FromMinutes(_options.Value.CleanupIntervalMinutes), stoppingToken);
 
             await _idempotencyStore.RemoveExpiredAsync(TimeSpan.FromHours(_options.Value.TtlHours), TimeSpan.FromMinutes(_options.Value.StaleProcessingMinutes));
         }
