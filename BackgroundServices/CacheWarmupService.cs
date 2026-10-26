@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using UrlShortner.DTOs;
 using UrlShortner.Repositories;
 using UrlShortner.Settings;
 
@@ -34,7 +36,7 @@ public class CacheWarmupService : BackgroundService
 
                 var urls = await urlRepository.GetAllAsync();
 
-                var urlList = urls.Take(_cacheOptions.Value.GetUrlLimit);
+                var urlList = urls.Take(_cacheOptions.Value.GetUrlLimit).Select(u => new GetUrlDto(u.GeneratedUrl, u.OriginalUrl, u.Creator, u.Category, u.TotalVisits)).ToList();
                 var ttl = TimeSpan.FromMinutes(_cacheOptions.Value.GetAllTtlMinutes);
                 var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetAllJitterMinValue, _cacheOptions.Value.GetAllJitterMaxValue));
         
@@ -46,7 +48,7 @@ public class CacheWarmupService : BackgroundService
 
                 foreach (var url in topUrls)
                 {
-                    _cache.Set($"urls:url={url.GeneratedUrl}", url, ttl + jitter);
+                    _cache.Set($"urls:url={url.GeneratedUrl}", url.OriginalUrl, ttl + jitter);
                 }
 
                 _logger.LogInformation("Cache Warmup for Url succeeded!");
