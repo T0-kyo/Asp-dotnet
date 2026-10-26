@@ -88,7 +88,7 @@ app.UseWhen(
 app.UseExceptionHandler();
 
 app.UseWhen(
-    context => context.Request.Path.StartsWithSegments("api/v1/urls/admin"),
+    context => context.Request.Path.StartsWithSegments("/api/v1/urls/admin"),
     appBuilder => appBuilder.UseMiddleware<AdminAuthorizationMiddleware>()    
 );
 
