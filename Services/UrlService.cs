@@ -17,24 +17,26 @@ public class UrlService : IUrlService
     private readonly IOptions<UrlDefaultSettings> _urlOptions;
     private readonly IOptions<CacheSettings> _cacheOptions;
     private readonly IUrlRepository _urlRepository;
+    private readonly ILogger<UrlService> _logger;
     private readonly IVisitStore _visitStore;
     private readonly IMemoryCache _cache;
     static private int _cacheVersion = 1;
     const string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 
-    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IVisitStore visitStore, IOptions<CacheSettings> cacheOptions, IUrlRepository urlRepository, IMemoryCache cache)
+    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IVisitStore visitStore, ILogger<UrlService> logger, IOptions<CacheSettings> cacheOptions, IUrlRepository urlRepository, IMemoryCache cache)
     {
         _urlRepository = urlRepository;
         _cacheOptions = cacheOptions;
         _urlOptions = urlOptions;
         _visitStore = visitStore;
+        _logger = logger;
         _cache = cache;
     }
 
     private string GenerateShortUrl()
     {
-        return RandomNumberGenerator.GetString(allowedChars, 7);
+        return RandomNumberGenerator.GetString(allowedChars, _urlOptions.Value.UrlRandomValues);
     }
 
     private bool ValidateUri(string uri)
@@ -62,10 +64,20 @@ public class UrlService : IUrlService
             ExpiresAt = DateTime.UtcNow.Add(TimeSpan.FromDays(_urlOptions.Value.UrlExpireInDays))
         };
 
-        while (!await _urlRepository.TryAddAsync(url))
+        var attempts = _urlOptions.Value.UrlGenerationMaxAttempts;
+
+        while (!await _urlRepository.TryAddAsync(url) && attempts > 0)
         {
             url.GeneratedUrl = GenerateShortUrl();
-        }            
+            attempts--;
+        }
+
+        if (attempts == 0)
+        {
+            _logger.LogCritical("Failed to generate Url. Out of attempts!");
+
+            throw new FailedToGenerateUrl();
+        }
 
         Interlocked.Increment(ref _cacheVersion);
         return url;
