@@ -19,7 +19,7 @@ public class AdminAuthorizationMiddleware
 
     public async Task InvokeAsync(HttpContext httpContext)
     {
-        if (httpContext.Request.Headers["Admin-Key"] != _options.Value.Key)
+        if (string.IsNullOrEmpty(_options.Value.Key) || httpContext.Request.Headers["Admin-Key"] != _options.Value.Key)
             throw new MissingAdminKey();
 
         await _next(httpContext);
