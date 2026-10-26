@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using UrlShortner.Services;
+using UrlShortner.Repositories;
 using UrlShortner.Settings;
 
 
@@ -24,21 +24,32 @@ public class CacheWarmupService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        string key = "urls:v1:creator=:category=:page=1:pageSize=10";
+        string key = $"urls:v1:creator=:category=:page=1:pageSize={_cacheOptions.Value.GetUrlLimit}";
 
         try
         {
             using (var scope = _scopeFactory.CreateScope())
             {
-                var urlService = scope.ServiceProvider.GetRequiredService<IUrlService>();
+                var urlRepository = scope.ServiceProvider.GetRequiredService<IUrlRepository>();
 
-                var urls = await urlService.GetAllUrlsAsync(null, null, null, page: 1, pageSize: 10);
+                var urls = await urlRepository.GetAllAsync();
+
+                var urlList = urls.Take(_cacheOptions.Value.GetUrlLimit);
                 var ttl = TimeSpan.FromMinutes(_cacheOptions.Value.GetAllTtlMinutes);
                 var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetAllJitterMinValue, _cacheOptions.Value.GetAllJitterMaxValue));
         
-                _cache.Set(key, urls, ttl + jitter);
-    
-                _logger.LogInformation("Cache Warmup for Url list succeeded!");
+                _cache.Set(key, urlList, ttl + jitter);
+
+                var topUrls = urls.OrderByDescending(u => u.TotalVisits).Take(_cacheOptions.Value.GetUrlLimit);
+                ttl = TimeSpan.FromHours(_cacheOptions.Value.GetUrlTtlHours);
+                jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetUrlJitterMinValue, _cacheOptions.Value.GetUrlJitterMaxValue));
+
+                foreach (var url in topUrls)
+                {
+                    _cache.Set($"urls:url={url.GeneratedUrl}", url, ttl + jitter);
+                }
+
+                _logger.LogInformation("Cache Warmup for Url succeeded!");
             }
         }
         catch (Exception)
