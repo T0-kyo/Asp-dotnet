@@ -97,7 +97,13 @@ public class IdempotencyMiddleware
                         }
                         else
                         {
-                            await _store.UpdateAsync(idempotencyKey!, record);
+                            if (!await _store.TryUpdateStaleAsync(idempotencyKey!, record))
+                            {
+                                httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                                httpContext.Response.ContentType = "text/plain";
+                                await httpContext.Response.WriteAsync("Request is being processed!");
+                                return;   
+                            }
                         }
                     }
                 }
