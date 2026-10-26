@@ -55,7 +55,7 @@ public class IdempotencyMiddleware
                     Status = IdempotencyStatus.Pending,
                 };
 
-                if (await _store.TryAddAsync(idempotencyKey!, record))
+                if (!await _store.TryAddAsync(idempotencyKey!, record))
                 {
                     var existingRecord = await _store.GetRecordAsync(idempotencyKey!);
 
