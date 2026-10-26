@@ -38,7 +38,7 @@ public class CacheWarmupService : BackgroundService
         
                 _cache.Set(key, urls, ttl + jitter);
     
-                _logger.LogInformation("Cache Warmup for book list succeeded!");
+                _logger.LogInformation("Cache Warmup for Url list succeeded!");
             }
         }
         catch (Exception)
