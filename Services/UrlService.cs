@@ -158,7 +158,7 @@ public class UrlService : IUrlService
 
             urls = [..urls.Skip(page * pageSize).Take(pageSize)];
 
-            return urls.Select(u => new GetUrlDto(u.OriginalUrl, u.Creator, u.Category, u.TotalVisits)).ToList();
+            return urls.Select(u => new GetUrlDto(u.GeneratedUrl, u.OriginalUrl, u.Creator, u.Category, u.TotalVisits)).ToList();
         });
         
         return result!;
