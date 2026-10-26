@@ -29,4 +29,10 @@ public class VisitCounterFlushService : BackgroundService
             await _urlRepository.IncrementVisitCountAsync(_visitStore.Drain());
         }
     }
+
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await _urlRepository.IncrementVisitCountAsync(_visitStore.Drain());
+        await base.StopAsync(cancellationToken);
+    }
 }
