@@ -54,9 +54,12 @@ public class CacheWarmupService : BackgroundService
                 _logger.LogInformation("Cache Warmup for Url succeeded!");
             }
         }
-        catch (Exception)
+        catch (OperationCanceledException)
         {
-            _logger.LogWarning("Cache Warmup failed!");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cache Warmup failed!");
         }
     }
 }
