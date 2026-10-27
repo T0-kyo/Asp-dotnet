@@ -9,12 +9,12 @@ public class Url
 
 
     public int TotalVisits => _totalVisits;
-    public string OriginalUrl { get; set; } = "";
-    public string GeneratedUrl { get; set; } = "";
-    public string Creator { get; set; } = "";
-    public UrlCategory Category { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime ExpiresAt { get; set; }
+    public string OriginalUrl { get; init; } = "";
+    public string GeneratedUrl { get; init; } = "";
+    public string Creator { get; init; } = "";
+    public UrlCategory Category { get; init; }
+    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public DateTime ExpiresAt { get; init; }
 
 
     public void IncreaseVisitCount(int value)

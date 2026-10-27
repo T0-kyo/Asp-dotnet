@@ -68,7 +68,15 @@ public class UrlService : IUrlService
 
         while (!await _urlRepository.TryAddAsync(url) && attempts > 0)
         {
-            url.GeneratedUrl = GenerateShortUrl();
+            url = new Url
+            {
+                OriginalUrl = dto.OriginalUrl,
+                GeneratedUrl = GenerateShortUrl(),
+                Creator = dto.Creator ?? _urlOptions.Value.DefaultCreator,
+                Category = dto.Category ?? UrlCategory.Others,
+                ExpiresAt = DateTime.UtcNow.Add(TimeSpan.FromDays(_urlOptions.Value.UrlExpireInDays))
+            };
+
             attempts--;
         }
 
