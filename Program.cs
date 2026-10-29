@@ -50,8 +50,9 @@ builder.Services.AddRateLimiter(limiterOptions =>
 
 
 builder.Services.AddSingleton<IVisitStore, VisitStore>();
-builder.Services.AddSingleton<IIdempotencyStore, IdempotencyStore>();
+builder.Services.AddSingleton<IInFlightStore, InFlightStore>();
 builder.Services.AddSingleton<IUrlRepository, UrlRepository>();
+builder.Services.AddSingleton<IIdempotencyStore, IdempotencyStore>();
 
 builder.Services.AddScoped<IUrlService, UrlService>();
 
