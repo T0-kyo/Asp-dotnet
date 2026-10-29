@@ -1,3 +1,5 @@
+using Microsoft.OpenApi;
+using System.Reflection;
 using UrlShortner.Stores;
 using UrlShortner.Services;
 using UrlShortner.Settings;
@@ -5,7 +7,6 @@ using UrlShortner.Middleware;
 using UrlShortner.Repositories;
 using UrlShortner.BackgroundServices;
 using Microsoft.AspNetCore.RateLimiting;
-
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,7 +68,29 @@ builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
+
+    options.AddSecurityDefinition("AdminKey", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.ApiKey,
+        In = ParameterLocation.Header,
+        Name = "Admin-Key",
+        Description = "Admin key required for /admin endpoints."
+    });
+
+    options.AddSecurityRequirement(document =>
+    {
+        var schemeRef = new OpenApiSecuritySchemeReference("AdminKey", document);
+        return new OpenApiSecurityRequirement
+        {
+            [schemeRef] = new List<string>()
+        };
+    });
+});
 
 
 

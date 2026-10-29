@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
-using UrlShortner.DTOs;
+using Microsoft.AspNetCore.Mvc;
 using UrlShortner.Services;
 using UrlShortner.Settings;
+using UrlShortner.DTOs;
 
 
 namespace UrlShortner.Controllers;
@@ -24,6 +24,7 @@ public class UrlController : ControllerBase
         _options = options;
     }
 
+    [ProducesResponseType(StatusCodes.Status302Found)]
     [HttpGet("{url}")]
     public async Task<IActionResult> GetUrlAsync(string url) => Redirect(await _urlService.GetOriginalUrlAsync(url));
 
