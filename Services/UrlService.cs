@@ -17,6 +17,7 @@ public class UrlService : IUrlService
     private readonly IOptions<UrlDefaultSettings> _urlOptions;
     private readonly IOptions<CacheSettings> _cacheOptions;
     private readonly IUrlRepository _urlRepository;
+    private readonly IInFlightStore _inFlightStore;
     private readonly ILogger<UrlService> _logger;
     private readonly IVisitStore _visitStore;
     private readonly IMemoryCache _cache;
@@ -24,9 +25,17 @@ public class UrlService : IUrlService
     const string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 
-    public UrlService(IOptions<UrlDefaultSettings> urlOptions, IVisitStore visitStore, ILogger<UrlService> logger, IOptions<CacheSettings> cacheOptions, IUrlRepository urlRepository, IMemoryCache cache)
+    public UrlService(
+        IOptions<UrlDefaultSettings> urlOptions, 
+        IVisitStore visitStore, 
+        ILogger<UrlService> logger, 
+        IOptions<CacheSettings> cacheOptions, 
+        IUrlRepository urlRepository, 
+        IMemoryCache cache, 
+        IInFlightStore inFlightStore)
     {
         _urlRepository = urlRepository;
+        _inFlightStore =inFlightStore;
         _cacheOptions = cacheOptions;
         _urlOptions = urlOptions;
         _visitStore = visitStore;
@@ -105,82 +114,106 @@ public class UrlService : IUrlService
     {
         var key = $"urls:url={shortUrl}";
 
-        var result = await _cache.GetOrCreateAsync(key, async enrty =>
+        if (_cache.TryGetValue(key, out string? cached) && cached is not null)
         {
-            var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetUrlJitterMinValue, _cacheOptions.Value.GetUrlJitterMaxValue));
+            _visitStore.AddVisitCount(shortUrl);
 
-            enrty.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(_cacheOptions.Value.GetUrlTtlHours) + jitter;
+            return cached;
+        }
 
-            var url = await _urlRepository.GetAsync(shortUrl);
+        var lazy = _inFlightStore.GetOrAddUrl(key, async () =>
+        {
+            try
+            {
+                var url = await _urlRepository.GetAsync(shortUrl) ?? throw new UrlNotFound();
 
-            if (url is null)
-                throw new UrlNotFound();
-
-            return url.OriginalUrl;
+                var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetUrlJitterMinValue, _cacheOptions.Value.GetUrlJitterMaxValue));
+                _cache.Set(key, url.OriginalUrl, TimeSpan.FromHours(_cacheOptions.Value.GetUrlTtlHours) + jitter);
+            
+                return url.OriginalUrl;
+            }
+            finally
+            {
+                _inFlightStore.TryRemove(key);
+            }
         });
 
+        var result = await lazy.Value;
+        
         _visitStore.AddVisitCount(shortUrl);
-        return result!;
+        return result;
     }
 
     public async Task<IReadOnlyCollection<GetUrlDto>> GetAllUrlsAsync(string? sortBy, string? creator, string? category, int page, int pageSize)
     {
         string key = $"urls:v{_cacheVersion}:creator={creator}:category={category}:page={page}:pageSize={pageSize}";
 
-        var result = await _cache.GetOrCreateAsync(key, async entry =>
+        if (_cache.TryGetValue(key, out IReadOnlyCollection<GetUrlDto>? cached) && cached is not null)
+            return cached;
+
+        var lazy = _inFlightStore.GetOrAddUrlList(key, async () =>
         {
-            var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetAllJitterMinValue, _cacheOptions.Value.GetAllJitterMaxValue));
-
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(_cacheOptions.Value.GetAllTtlMinutes) + jitter;
-
-            var urls = await _urlRepository.GetAllAsync();
-
-            if (creator is not null)
+            try
             {
-                urls = [..urls.Where(u => u.Creator == creator)];
-            }
+                var urls = await _urlRepository.GetAllAsync();
 
-            if (category is not null)
-            {
-                var urlCategory = category.ToLower() switch
+                if (creator is not null)
                 {
-                    "business" => UrlCategory.Business,
-                    "entertainment" => UrlCategory.Entertainment,
-                    "online-tools" => UrlCategory.OnlineTools,
-                    "social-media" => UrlCategory.SocialMedia,
-                    "others" => UrlCategory.Others,
-                    _ => throw new FilterNotFound($"category={category}") 
-                };
-
-                urls = [..urls.Where(u => u.Category == urlCategory)];
-            }
-
-            if (sortBy is not null)
-            {
-                switch (sortBy.ToLower())
-                {
-                    case "latest":
-                        urls = [..urls.OrderByDescending(u => u.CreatedAt)];
-                        break;
-                    case "oldest":
-                        urls = [..urls.OrderBy(u => u.CreatedAt)];
-                        break;
-                    case "most-popular":
-                        urls = [..urls.OrderByDescending(u => u.TotalVisits)];
-                        break;
-                    case "least-popular":
-                        urls = [..urls.OrderBy(u => u.TotalVisits)];
-                        break;
-                    default:
-                        throw new FilterNotFound($"sortBy={sortBy}");
+                    urls = [..urls.Where(u => u.Creator == creator)];
                 }
+
+                if (category is not null)
+                {
+                    var urlCategory = category.ToLower() switch
+                    {
+                        "business" => UrlCategory.Business,
+                        "entertainment" => UrlCategory.Entertainment,
+                        "online-tools" => UrlCategory.OnlineTools,
+                        "social-media" => UrlCategory.SocialMedia,
+                        "others" => UrlCategory.Others,
+                        _ => throw new FilterNotFound($"category={category}") 
+                    };
+
+                    urls = [..urls.Where(u => u.Category == urlCategory)];
+                }
+
+                if (sortBy is not null)
+                {
+                    switch (sortBy.ToLower())
+                    {
+                        case "latest":
+                            urls = [..urls.OrderByDescending(u => u.CreatedAt)];
+                            break;
+                        case "oldest":
+                            urls = [..urls.OrderBy(u => u.CreatedAt)];
+                            break;
+                        case "most-popular":
+                            urls = [..urls.OrderByDescending(u => u.TotalVisits)];
+                            break;
+                        case "least-popular":
+                            urls = [..urls.OrderBy(u => u.TotalVisits)];
+                            break;
+                        default:
+                            throw new FilterNotFound($"sortBy={sortBy}");
+                    }
+                }
+
+                urls = [..urls.Skip(page * pageSize).Take(pageSize)];
+                var dtos = urls.Select(u => new GetUrlDto(u.GeneratedUrl, u.OriginalUrl, u.Creator, u.Category, u.TotalVisits)).ToList();
+
+                var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetAllJitterMinValue, _cacheOptions.Value.GetAllJitterMaxValue));
+                _cache.Set(key, dtos, TimeSpan.FromMinutes(_cacheOptions.Value.GetAllTtlMinutes) + jitter);
+
+                return dtos;
             }
-
-            urls = [..urls.Skip(page * pageSize).Take(pageSize)];
-
-            return urls.Select(u => new GetUrlDto(u.GeneratedUrl, u.OriginalUrl, u.Creator, u.Category, u.TotalVisits)).ToList();
+            finally
+            {
+                _inFlightStore.TryRemove(key);
+            }
         });
-        
-        return result!;
+
+        var result = await lazy.Value;
+
+        return result;
     }
 }
