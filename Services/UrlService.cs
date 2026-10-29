@@ -198,7 +198,7 @@ public class UrlService : IUrlService
                     }
                 }
 
-                urls = [..urls.Skip(page * pageSize).Take(pageSize)];
+                urls = [..urls.Skip((page - 1) * pageSize).Take(pageSize)];
                 var dtos = urls.Select(u => new GetUrlDto(u.GeneratedUrl, u.OriginalUrl, u.Creator, u.Category, u.TotalVisits)).ToList();
 
                 var jitter = TimeSpan.FromSeconds(Random.Shared.Next(_cacheOptions.Value.GetAllJitterMinValue, _cacheOptions.Value.GetAllJitterMaxValue));
