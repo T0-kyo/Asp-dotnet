@@ -58,6 +58,7 @@ builder.Services.AddSingleton<IIdempotencyStore, IdempotencyStore>();
 builder.Services.AddScoped<IUrlService, UrlService>();
 
 builder.Services.AddHostedService<CacheWarmupService>();
+builder.Services.AddHostedService<VisitCounterFlushService>();
 builder.Services.AddHostedService<RepositoryCleanupService>();
 builder.Services.AddHostedService<IdempotencyCleanupService>();
 
