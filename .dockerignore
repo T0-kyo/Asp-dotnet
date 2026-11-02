@@ -1,0 +1,7 @@
+**/bin
+**/obj
+**/.git
+/logs
+.env
+Dockerfile
+appsettings.Development.json
