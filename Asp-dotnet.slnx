@@ -1,5 +1,4 @@
 <Solution>
-  <Project Path="BooksApi/BooksApi.csproj" />
   <Project Path="UrlShortner.test/UrlShortner.test.csproj" />
   <Project Path="UrlShortner/UrlShortner.csproj" />
 </Solution>
