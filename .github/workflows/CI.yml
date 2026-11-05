@@ -1,0 +1,29 @@
+name: api CI
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-build:
+    name: test-build
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: setup-repo
+        uses: actions/checkout@v4
+
+      - name: setup-dotnet
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: restore
+        run: dotnet restore
+
+      - name: build
+        run: dotnet build --no-restore
+
+      - name: test
+        run: dotnet test --no-build
