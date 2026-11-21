@@ -2,6 +2,7 @@
 **/obj
 /logs
 /BooksApi
+/Security
 .idea/
 .env
 appsettings.Development.json
